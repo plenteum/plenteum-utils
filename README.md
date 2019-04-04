@@ -3,7 +3,7 @@
 [![NPM](https://nodei.co/npm/plenteum-utils.png?downloads=true&stars=true)](https://nodei.co/npm/plenteum-utils/)
 
 #### Master Build Status
-[![Build Status](https://travis-ci.org/plenteum/plenteum-utils.svg?branch=master)](https://travis-ci.org/plenteum/plenteum-utils)
+[![Build Status](https://travis-ci.com/plenteum/plenteum-utils.svg?branch=master)](https://travis-ci.com/plenteum/plenteum-utils)
 
 # Plenteum Javascript Utilities
 
