@@ -1,24 +1,24 @@
-![image](https://user-images.githubusercontent.com/34389545/35821974-62e0e25c-0a70-11e8-87dd-2cfffeb6ed47.png)
+![image](https://user-images.githubusercontent.com/38456463/43392866-43c69cf4-93f5-11e8-81e2-3e3f81b6ca1d.png)
 
-[![NPM](https://nodei.co/npm/turtlecoin-utils.png?downloads=true&stars=true)](https://nodei.co/npm/turtlecoin-utils/)
+[![NPM](https://nodei.co/npm/plenteum-utils.png?downloads=true&stars=true)](https://nodei.co/npm/plenteum-utils/)
 
 #### Master Build Status
-[![Build Status](https://travis-ci.org/turtlecoin/turtlecoin-utils.svg?branch=master)](https://travis-ci.org/turtlecoin/turtlecoin-utils)
+[![Build Status](https://travis-ci.org/plenteum/plenteum-utils.svg?branch=master)](https://travis-ci.org/plenteum/plenteum-utils)
 
-# TurtleCoin Javascript Utilities
+# Plenteum Javascript Utilities
 
 ## Disclaimer
 
 ***Use of this code in its current state may lead to unexpected results***
 
-This repository contains highly experimental code  with the goal of making it possible to interact with a daemon including wallet functionaity (sending/receiving transactions) without the need for `turtle-service` or `wallet-api` using Node.js. By using the code in this repo, you understand that some functions may not work, others may work but be untested, while others may upset you.
+This repository contains highly experimental code  with the goal of making it possible to interact with a daemon including wallet functionaity (sending/receiving transactions) without the need for `wallet-service` or `wallet-api` using Node.js. By using the code in this repo, you understand that some functions may not work, others may work but be untested, while others may upset you.
 
 The best way to address such situations is to submit a Pull Request to resolve the issue you're running into.
 
 ## Installation
 
 ```bash
-npm i git+https://github.com/turtlecoin/turtlecoin-utils
+npm i git+https://github.com/plenteum/plenteum-utils
 ```
 
 ## Initialization
@@ -26,14 +26,14 @@ npm i git+https://github.com/turtlecoin/turtlecoin-utils
 ### JavaScript
 
 ```javascript
-const TurtleCoinUtils = require('turtlecoin-utils').CryptoNote
-const coinUtils = new TurtleCoinUtils()
+const PlenteumUtils = require('plenteum-utils').CryptoNote
+const coinUtils = new PlenteumUtils()
 ```
 
 ### TypeScript
 
 ```typescript
-import { CryptoNote } from 'turtlecoin-utils'
+import { CryptoNote } from 'plenteum-utils'
 const coinUtils = new CryptoNote()
 ```
 
@@ -45,13 +45,16 @@ If initializing for a different CryptoNote project you can specify the configura
 All parameters are optional.
 
 ```javascript
-const TurtleCoinUtils = require('turtlecoin-utils').CryptoNote
-const coinUtils = new TurtleCoinUtils({
+const PlenteumUtils = require('plenteum-utils').CryptoNote
+const coinUtils = new PlenteumUtils({
   /* The amount of decimals your coin has */
   coinUnitPlaces: 8,
 
+  /* The amount of decimals your coin should display (mostly this will be the same as coinUnitPlaces) */
+  coinDisplayUnitPlaces: 2,
+
   /* Your address prefix - this can be found in CryptoNoteConfig */
-  addressPrefix: 6581243850,
+  addressPrefix: 18181,
 
   /* The amount of keccak iterations to be performed when creating seeds and
      addresses. Should be a large number if your are supplying poor entropy
@@ -59,7 +62,7 @@ const coinUtils = new TurtleCoinUtils({
   keccakIterations: 100,
 
   /* The default network fee to use in atomic units */
-  defaultNetworkFee: 10
+  defaultNetworkFee: 0
 })
 ```
 
@@ -165,7 +168,7 @@ Returns a string.
     privateKey: '40cf3cdab84ef0c2c17c100ffb1ba3cb1c86e22f2c4bed766a465d466b210a0f',
     publicKey: '1909af618bef1ecd30339fe12fb133bbaad05cc0ea365caf02254a5f3ae735df'
   },
-  address: 'TRTLuwmU3QWjU77wyHMvBiMdiQdKgj9qfEc3oiEhHfizSu8wZ6K8ZoWQQY57qNmDC48yg6UAHzyTugB9tMohMnUEArSCdrmeUdP',
+  address: 'PLeuwmU3QWjU77wyHMvBiMdiQdKgj9qfEc3oiEhHfizSu8wZ6K8ZoWQQY57qNmDC48yg6UAHzyTugB9tMohMnUEArSCdrmeUdP',
   mnemonic: 'lagoon much skirting goes okay afield royal cupcake lordship myriad necklace pliers noodles laboratory axes useful poverty igloo diode ablaze nifty inline point ritual necklace',
   seed: '517f0d3c5438416adad752557fdf001acfea189d35af8bba326c86928cc6100e'
 }
@@ -186,9 +189,9 @@ Returns a string.
 
 ```javascript
 { prefix: '9df6ee01',
-  base58: 'TRTL',
+  base58: 'PLe',
   decimal: 3914525,
-  hexadecimal: '3bbb1d' }
+  hexadecimal: '4705' }
 ```
 
 ### Credits
@@ -200,4 +203,4 @@ Special thanks goes out to:
 * Luigi111
 * [The MyMonero Project](https://github.com/mymonero/mymonero-app-js)
 * The Masari Project: [gnock](https://github.com/gnock)
-* The Plentum Project: [DaveLong](https://github.com/DaveLong)
+* The Plentum Project: [DaveLong](https://github.com/DavehLong)

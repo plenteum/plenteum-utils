@@ -3,6 +3,7 @@
 // Copyright (c) 2016, Paul Shapiro
 // Copyright (c) 2017, Luigi111
 // Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -27,13 +28,13 @@ const SHA3 = require('./lib/sha3.js')
    so that we can use that as it's a magnitudes
    faster, if not, we'll fall back to the
    JS implementations of the crypto functions */
-var TurtleCoinCrypto
+var PlenteumCrypto
 try {
-  TurtleCoinCrypto = require('turtlecoin-crypto')
+  PlenteumCrypto = require('plenteum-crypto')
 } catch (e) {
   /* Silence standardjs check */
-  TurtleCoinCrypto = e
-  TurtleCoinCrypto = false
+  PlenteumCrypto = e
+  PlenteumCrypto = false
 }
 
 /* This sets up the ability for the caller to specify
@@ -78,9 +79,13 @@ class CryptoNote {
     this.config = require('./config.json')
 
     if (config) {
-      if (config.coinUnitPlaces) {
-        this.config.coinUnitPlaces = config.coinUnitPlaces
-      }
+        if (config.coinUnitPlaces) {
+            this.config.coinUnitPlaces = config.coinUnitPlaces
+        }
+
+        if (config.coinDisplayUnitPlaces) {
+            this.config.coinDisplayUnitPlaces = config.coinDisplayUnitPlaces
+        }
 
       if (config.addressPrefix) {
         this.config.addressPrefix = config.addressPrefix
@@ -617,9 +622,9 @@ class CryptoNote {
 
   formatMoney (amount) {
     var places = ''
-    for (var i = 0; i < this.config.coinUnitPlaces; i++) {
+    for (var i = 0; i < this.config.coinDisplayUnitPlaces; i++) {
       places += '0'
-    }
+      }
     return Numeral(amount / Math.pow(10, this.config.coinUnitPlaces)).format('0,0.' + places)
   }
 
@@ -634,8 +639,8 @@ class CryptoNote {
 
     if (userCryptoFunctions.underivePublicKey) {
       userCryptoFunctions.underivePublicKey(derivation, outputIndex, outputKey)
-    } else if (TurtleCoinCrypto) {
-      return TurtleCoinCrypto.underivePublicKey(derivation, outputIndex, outputKey)
+    } else if (PlenteumCrypto) {
+      return PlenteumCrypto.underivePublicKey(derivation, outputIndex, outputKey)
     } else {
       const RingSigs = require('./lib/ringsigs.js')
 
@@ -764,8 +769,8 @@ function scReduce (hex, size) {
 }
 
 function scReduce32 (hex) {
-  if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.scReduce32(hex)
+  if (PlenteumCrypto) {
+    return PlenteumCrypto.scReduce32(hex)
   } else {
     return scReduce(hex, 32)
   }
@@ -798,8 +803,8 @@ function derivePublicKey (derivation, outputIndex, publicKey) {
 
   if (userCryptoFunctions.derivePublicKey) {
     return userCryptoFunctions.derivePublicKey(derivation, outputIndex, publicKey)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.derivePublicKey(derivation, outputIndex, publicKey)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.derivePublicKey(derivation, outputIndex, publicKey)
   } else {
     var s = derivationToScalar(derivation, outputIndex)
     return bin2hex(NACL.ll.geAdd(hex2bin(publicKey), hex2bin(getScalarMultBase(s))))
@@ -817,8 +822,8 @@ function deriveSecretKey (derivation, outputIndex, privateKey) {
 
   if (userCryptoFunctions.deriveSecretKey) {
     return userCryptoFunctions.deriveSecretKey(derivation, outputIndex, privateKey)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
   } else {
     var m = CNCrypto._malloc(SIZES.ECSCALAR)
     var b = hex2bin(derivationToScalar(derivation, outputIndex))
@@ -850,8 +855,8 @@ function generateKeyImage (publicKey, privateKey) {
 
   if (userCryptoFunctions.generateKeyImage) {
     return userCryptoFunctions.generateKeyImage(publicKey, privateKey)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.generateKeyImage(publicKey, privateKey)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.generateKeyImage(publicKey, privateKey)
   } else {
     const RingSigs = require('./lib/ringsigs.js')
 
@@ -889,8 +894,8 @@ function privateKeyToPublicKey (privateKey) {
 
   if (userCryptoFunctions.secretKeyToPublicKey) {
     return userCryptoFunctions.secretKeyToPublicKey(privateKey)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.secretKeyToPublicKey(privateKey)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.secretKeyToPublicKey(privateKey)
   } else {
     return bin2hex(NACL.ll.geScalarmultBase(hex2bin(privateKey)))
   }
@@ -903,8 +908,8 @@ function cnFastHash (input) {
 
   if (userCryptoFunctions.cnFastHash) {
     return userCryptoFunctions.cnFastHash(input)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.cnFastHash(input)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.cnFastHash(input)
   } else {
     return SHA3.keccak_256(hex2bin(input))
   }
@@ -1018,8 +1023,8 @@ function generateRingSignature (transactionPrefixHash, keyImage, inputKeys, priv
 
   if (userCryptoFunctions.generateRingSignatures) {
     return userCryptoFunctions.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
   } else {
     const RingSigs = require('./lib/ringsigs.js')
 
@@ -1454,8 +1459,8 @@ function generateKeyDerivation (transactionPublicKey, privateViewKey) {
 
   if (userCryptoFunctions.generateKeyDerivation) {
     return userCryptoFunctions.generateKeyDerivation(transactionPublicKey, privateViewKey)
-  } else if (TurtleCoinCrypto) {
-    return TurtleCoinCrypto.generateKeyDerivation(privateViewKey, transactionPublicKey)
+  } else if (PlenteumCrypto) {
+    return PlenteumCrypto.generateKeyDerivation(privateViewKey, transactionPublicKey)
   } else {
     var p = geScalarMult(transactionPublicKey, privateViewKey)
     return geScalarMult(p, d2s(8))

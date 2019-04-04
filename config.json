@@ -1,6 +1,7 @@
 {
-  "coinUnitPlaces": 2,
-  "addressPrefix": 3914525,
-  "keccakIterations": 1,
-  "defaultNetworkFee": 10
+  "coinUnitPlaces": 8,
+  "coinDisplayUnitPlaces": 2,
+  "addressPrefix": 18181,
+  "keccakIterations": 100,
+  "defaultNetworkFee": 0
 }

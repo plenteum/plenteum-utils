@@ -239,6 +239,11 @@ export interface CryptoNoteOptions {
     coinUnitPlaces?: number;
 
     /**
+     * The amount of decimal places your coin should display (99% of the time this is the same as coinUnitPlaces).
+     */
+    coinDisplayUnitPlaces?: number;
+
+    /**
      * The hex/decimal address prefix of your coin.
      */
     addressPrefix?: number;
