@@ -1,27 +1,28 @@
 {
-  "name": "turtlecoin-utils",
-  "version": "0.0.6",
-  "description": "A Node.js collection of utilities useful for TurtleCoin developers",
+  "name": "plenteum-utils",
+  "version": "0.0.1",
+  "description": "A Node.js collection of utilities useful for Plenteum developers",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "test": "npm install && standard && node tests/tests.js"
   },
   "keywords": [
-    "TurtleCoin",
+    "Plenteum",
     "Utilities"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/turtlecoin/turtlecoin-utils.git"
+    "url": "git+https://github.com/plenteum/plenteum-utils.git"
   },
   "author": "Brandon Lehmann <brandonlehmann@gmail.com>",
   "contributors": [
-    "zpalmtree <22151537+zpalmtree@users.noreply.github.com>"
+    "zpalmtree <22151537+zpalmtree@users.noreply.github.com>",
+    "davehlong <davidhamiltonlong@gmail.com>"
   ],
   "license": "GPL-3.0",
   "optionalDependencies": {
-    "turtlecoin-crypto": "0.0.3"
+    "plenteum-crypto": "0.0.1"
   },
   "dependencies": {
     "crc": "^3.8.0",
