@@ -79,13 +79,13 @@ class CryptoNote {
     this.config = require('./config.json')
 
     if (config) {
-        if (config.coinUnitPlaces) {
-            this.config.coinUnitPlaces = config.coinUnitPlaces
-        }
+      if (config.coinUnitPlaces) {
+        this.config.coinUnitPlaces = config.coinUnitPlaces
+      }
 
-        if (config.coinDisplayUnitPlaces) {
-            this.config.coinDisplayUnitPlaces = config.coinDisplayUnitPlaces
-        }
+      if (config.coinDisplayUnitPlaces) {
+        this.config.coinDisplayUnitPlaces = config.coinDisplayUnitPlaces
+      }
 
       if (config.addressPrefix) {
         this.config.addressPrefix = config.addressPrefix
@@ -624,7 +624,7 @@ class CryptoNote {
     var places = ''
     for (var i = 0; i < this.config.coinDisplayUnitPlaces; i++) {
       places += '0'
-      }
+    }
     return Numeral(amount / Math.pow(10, this.config.coinUnitPlaces)).format('0,0.' + places)
   }
 
