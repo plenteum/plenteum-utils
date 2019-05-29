@@ -36,14 +36,13 @@ try {
 
   /* These are the JS implementations of the
    crypto functions that we need to do what
-   we are trying to do. They are slow and for whatever reason 
+   we are trying to do. They are slow and for whatever reason
    attempt if we can't use the native module
    painful and only used as a last ditch */
-   
+
   NACL = require('./lib/nacl-fast-cn.js')
   CNCrypto = require('./lib/crypto.js')
   SHA3 = require('./lib/sha3.js')
-   
 }
 
 /* This sets up the ability for the caller to specify
