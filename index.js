@@ -22,24 +22,28 @@ const Numeral = require('numeral')
    faster, if not, we'll fall back to the
    JS implementations of the crypto functions */
 var PlenteumCrypto
+
 var NACL
 var CNCrypto
 var SHA3
+
 try {
   PlenteumCrypto = require('plenteum-crypto')
 } catch (e) {
   /* Silence standardjs check */
   PlenteumCrypto = e
   PlenteumCrypto = false
+
   /* These are the JS implementations of the
    crypto functions that we need to do what
-   we are trying to do. They are slow and
+   we are trying to do. They are slow and for whatever reason 
+   attempt if we can't use the native module
+   painful and only used as a last ditch */
+   
   NACL = require('./lib/nacl-fast-cn.js')
   CNCrypto = require('./lib/crypto.js')
   SHA3 = require('./lib/sha3.js')
-   for whatever reason */
-   attempt if we can't use the native module
-   painful and only used as a last ditch
+   
 }
 
 /* This sets up the ability for the caller to specify
