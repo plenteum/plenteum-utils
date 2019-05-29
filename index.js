@@ -11,30 +11,35 @@
 
 const BigInteger = require('./lib/biginteger.js')
 const Base58 = require('./lib/base58.js')
+const BlockTemplate = require('./lib/blocktemplate.js')
 const Mnemonic = require('./lib/mnemonic.js')
-const VarintDecoder = require('varint-decoder')
+const Varint = require('varint')
 const SecureRandomString = require('secure-random-string')
 const Numeral = require('numeral')
-
-/* These are the JS implementations of the
-   crypto functions that we need to do what
-   we are trying to do. They are slow and
-   painful */
-const NACL = require('./lib/nacl-fast-cn.js')
-const CNCrypto = require('./lib/crypto.js')
-const SHA3 = require('./lib/sha3.js')
 
 /* Try to load the Node C++ Addon module
    so that we can use that as it's a magnitudes
    faster, if not, we'll fall back to the
    JS implementations of the crypto functions */
 var PlenteumCrypto
+var NACL
+var CNCrypto
+var SHA3
 try {
   PlenteumCrypto = require('plenteum-crypto')
 } catch (e) {
   /* Silence standardjs check */
   PlenteumCrypto = e
   PlenteumCrypto = false
+  /* These are the JS implementations of the
+   crypto functions that we need to do what
+   we are trying to do. They are slow and
+  NACL = require('./lib/nacl-fast-cn.js')
+  CNCrypto = require('./lib/crypto.js')
+  SHA3 = require('./lib/sha3.js')
+   for whatever reason */
+   attempt if we can't use the native module
+   painful and only used as a last ditch
 }
 
 /* This sets up the ability for the caller to specify
@@ -97,6 +102,10 @@ class CryptoNote {
 
       if (config.defaultNetworkFee) {
         this.config.defaultNetworkFee = config.defaultNetworkFee
+      }
+
+      if (config.mmMiningBlockVersion) {
+        this.config.mmMiningBlockVersion = config.mmMiningBlockVersion
       }
 
       /* The checks below are for detecting customer caller
@@ -640,7 +649,10 @@ class CryptoNote {
     if (userCryptoFunctions.underivePublicKey) {
       userCryptoFunctions.underivePublicKey(derivation, outputIndex, outputKey)
     } else if (PlenteumCrypto) {
-      return PlenteumCrypto.underivePublicKey(derivation, outputIndex, outputKey)
+      const [err, key] = PlenteumCrypto.underivePublicKey(derivation, outputIndex, outputKey)
+      if (err) throw new Error('Could not underive public key')
+
+      return key
     } else {
       const RingSigs = require('./lib/ringsigs.js')
 
@@ -650,6 +662,10 @@ class CryptoNote {
 
   cnFastHash (data) {
     return cnFastHash(data)
+  }
+
+  blockTemplate (payload) {
+    return new BlockTemplate(payload, this.mmMiningBlockVersion)
   }
 }
 
@@ -748,7 +764,7 @@ function encodeVarint (i) {
 
 function decodeVarint (hex) {
   const buffer = Buffer.from(hex, 'hex')
-  return parseInt(VarintDecoder(buffer))
+  return parseInt(Varint.decode(buffer))
 }
 
 function scReduce (hex, size) {
@@ -770,7 +786,10 @@ function scReduce (hex, size) {
 
 function scReduce32 (hex) {
   if (PlenteumCrypto) {
-    return PlenteumCrypto.scReduce32(hex)
+    const [err, result] = PlenteumCrypto.scReduce32(hex)
+    if (err) throw new Error('Could not scReduce32')
+
+    return result
   } else {
     return scReduce(hex, 32)
   }
@@ -804,7 +823,10 @@ function derivePublicKey (derivation, outputIndex, publicKey) {
   if (userCryptoFunctions.derivePublicKey) {
     return userCryptoFunctions.derivePublicKey(derivation, outputIndex, publicKey)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.derivePublicKey(derivation, outputIndex, publicKey)
+    const [err, key] = PlenteumCrypto.derivePublicKey(derivation, outputIndex, publicKey)
+    if (err) throw new Error('Could not derive public key')
+
+    return key
   } else {
     var s = derivationToScalar(derivation, outputIndex)
     return bin2hex(NACL.ll.geAdd(hex2bin(publicKey), hex2bin(getScalarMultBase(s))))
@@ -823,7 +845,10 @@ function deriveSecretKey (derivation, outputIndex, privateKey) {
   if (userCryptoFunctions.deriveSecretKey) {
     return userCryptoFunctions.deriveSecretKey(derivation, outputIndex, privateKey)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
+    const [err, key] = PlenteumCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
+    if (err) throw new Error('Could not derive secret key')
+
+    return key
   } else {
     var m = CNCrypto._malloc(SIZES.ECSCALAR)
     var b = hex2bin(derivationToScalar(derivation, outputIndex))
@@ -856,7 +881,10 @@ function generateKeyImage (publicKey, privateKey) {
   if (userCryptoFunctions.generateKeyImage) {
     return userCryptoFunctions.generateKeyImage(publicKey, privateKey)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.generateKeyImage(publicKey, privateKey)
+    const [err, keyImage] = PlenteumCrypto.generateKeyImage(publicKey, privateKey)
+    if (err) throw new Error('Could not generate key image')
+
+    return keyImage
   } else {
     const RingSigs = require('./lib/ringsigs.js')
 
@@ -895,7 +923,10 @@ function privateKeyToPublicKey (privateKey) {
   if (userCryptoFunctions.secretKeyToPublicKey) {
     return userCryptoFunctions.secretKeyToPublicKey(privateKey)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.secretKeyToPublicKey(privateKey)
+    const [err, key] = PlenteumCrypto.secretKeyToPublicKey(privateKey)
+    if (err) throw new Error('Could not derive public key from secret key')
+
+    return key
   } else {
     return bin2hex(NACL.ll.geScalarmultBase(hex2bin(privateKey)))
   }
@@ -909,7 +940,10 @@ function cnFastHash (input) {
   if (userCryptoFunctions.cnFastHash) {
     return userCryptoFunctions.cnFastHash(input)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.cnFastHash(input)
+    const [err, hash] = PlenteumCrypto.cnFastHash(input)
+    if (err) throw new Error('Could not calculate CN Fast Hash')
+
+    return hash
   } else {
     return SHA3.keccak_256(hex2bin(input))
   }
@@ -1024,7 +1058,10 @@ function generateRingSignature (transactionPrefixHash, keyImage, inputKeys, priv
   if (userCryptoFunctions.generateRingSignatures) {
     return userCryptoFunctions.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
+    const [err, signatures] = PlenteumCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
+    if (err) return new Error('Could not generate ring signatures')
+
+    return signatures
   } else {
     const RingSigs = require('./lib/ringsigs.js')
 
@@ -1460,7 +1497,10 @@ function generateKeyDerivation (transactionPublicKey, privateViewKey) {
   if (userCryptoFunctions.generateKeyDerivation) {
     return userCryptoFunctions.generateKeyDerivation(transactionPublicKey, privateViewKey)
   } else if (PlenteumCrypto) {
-    return PlenteumCrypto.generateKeyDerivation(privateViewKey, transactionPublicKey)
+    const [err, derivation] = PlenteumCrypto.generateKeyDerivation(privateViewKey, transactionPublicKey)
+    if (err) throw new Error('Could not generate key derivation')
+
+    return derivation
   } else {
     var p = geScalarMult(transactionPublicKey, privateViewKey)
     return geScalarMult(p, d2s(8))

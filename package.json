@@ -1,6 +1,6 @@
 {
   "name": "plenteum-utils",
-  "version": "0.0.1",
+  "version": "0.4.6",
   "description": "A Node.js collection of utilities useful for Plenteum developers",
   "main": "index.js",
   "types": "index.d.ts",
@@ -29,7 +29,7 @@
     "get-random-values": "^1.2.0",
     "numeral": "^2.0.6",
     "secure-random-string": "^1.1.0",
-    "varint-decoder": "^0.1.1"
+    "varint": "^5.0.0"
   },
   "standard": {
     "ignore": [
