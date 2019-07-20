@@ -1,5 +1,4 @@
 // Copyright (c) 2018-2019, The TurtleCoin Developers
-// Copyright (c) 2018-2019, The Plenteum Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -11,7 +10,7 @@ const config = require('../config.json')
 const cnUtil = new PlenteumUtils(config)
 
 const rawSeed = 'dd0c02d3202634821b4d9d91b63d919725f5c3e97e803f3512e52fb0dc2aab0c'
-const rawMnemonic = 'wedge fixate sickness misery system wife rims lilac invoke avatar coal enigma aimless boat tipsy nuance nerves waxing superior wrist neutral nibs snake swung waxing'
+const rawMnemonic = 'teeming taken piano ramped vegan jazz earth enjoy suture quick lied awkward ferry python often exotic cube hexagon ionic joyous cage abnormal hull jigsaw lied'
 
 console.log('')
 console.log('In Seed:          ', rawSeed)
@@ -28,7 +27,7 @@ assert(rawSeed === outputSeed.seed)
 assert(rawMnemonic === outputMnemonic.mnemonic)
 
 const testAddress = 'PLeaqCaSWGsR4uhhQP9p94KU91yjZANwC4f6wdPkybrrhW9KTn9Sy77QNZYMJrQ8ypBnbJPamzz3rgM9vKArjEgz1KiJGF88w1'
-const testAddressRaw = '9df6ee01f71e440f9a5aab08dbdab0f4f36bba813660a0600f109b1371dc53be33f23c99f0ba225065e1b9c2e43165b3e41f10fcb768853126dfa7e612a3df2deb332492cc073a66'
+const testAddressRaw = '858e017f5b051d048fe3b80085710d6f6e699092430c25e315dd0850198fb543f22601ac9f4f7e4a8bbb0320d33212a3407c5229348220f1eb3e42c579ee4a23088370ba0e0550'
 
 console.log('')
 console.log('In  Test Address: ', testAddress)
@@ -92,7 +91,7 @@ console.log('Creating outputs for amount %s to %s', amount, newAddress.address)
 var transfers = cnUtil.createTransactionOutputs(newAddress.address, amount)
 var amounts = []
 transfers.forEach((elem) => {
-  amounts.push(elem.amount)
+    amounts.push(elem.amount)
 })
 console.log('Created %s outputs [%s]', transfers.length, amounts.join(','))
 
@@ -104,7 +103,7 @@ console.log('Creating outputs for amount %s to %s', amount, newAddress.address)
 transfers = cnUtil.createTransactionOutputs(newAddress.address, amount)
 amounts = []
 transfers.forEach((elem) => {
-  amounts.push(elem.amount)
+    amounts.push(elem.amount)
 })
 console.log('Created %s outputs [%s]', transfers.length, amounts.join(','))
 
@@ -171,39 +170,39 @@ const calculatedHash = cnUtil.cnFastHash(inputData)
 const madeOutputs = cnUtil.createTransactionOutputs(newAddress.address, 90)
 
 const fakeInput = {
-  index: 2,
-  key: 'bb55bef919d1c9f74b5b52a8a6995a1dc4af4c0bb8824f5dc889012bc748173d',
-  amount: 100,
-  globalIndex: 1595598
+    index: 2,
+    key: 'bb55bef919d1c9f74b5b52a8a6995a1dc4af4c0bb8824f5dc889012bc748173d',
+    amount: 100,
+    globalIndex: 1595598
 }
 
 const madeInput = cnUtil.isOurTransactionOutput(txPublicKey, fakeInput, walletPrivateViewKey, walletPublicSpendKey, walletPrivateSpendKey)
 
 const randomOutputs = [[
-  {
-    'globalIndex': 53984,
-    'key': 'a5add8e36ca2473734fc7019730593888ae8c320753215976aac105816ba4848'
-  },
-  {
-    'globalIndex': 403047,
-    'key': '273dd5b63e84e6d7f12cf05eab092a7556708d8aac836c8748c1f0df3f0ff7fa'
-  },
-  {
-    'globalIndex': 1533859,
-    'key': '147121ea91715ee21af16513bc058d4ac445accfbe5cedc377c897fb04f4fecc'
-  }
+    {
+        'globalIndex': 53984,
+        'key': 'a5add8e36ca2473734fc7019730593888ae8c320753215976aac105816ba4848'
+    },
+    {
+        'globalIndex': 403047,
+        'key': '273dd5b63e84e6d7f12cf05eab092a7556708d8aac836c8748c1f0df3f0ff7fa'
+    },
+    {
+        'globalIndex': 1533859,
+        'key': '147121ea91715ee21af16513bc058d4ac445accfbe5cedc377c897fb04f4fecc'
+    }
 ]]
 
 console.log('')
 console.log('Transaction Creation Tests...')
 console.log('')
 try {
-  const tx = cnUtil.createTransaction(madeOutputs, [madeInput], randomOutputs, 3, 10, '')
-  console.log('Transaction Hash: %s', tx.hash)
-  console.log('Raw Transaction: %s', tx.rawTransaction)
+    const tx = cnUtil.createTransaction(madeOutputs, [madeInput], randomOutputs, 3, 10, '')
+    console.log('Transaction Hash: %s', tx.hash)
+    console.log('Raw Transaction: %s', tx.rawTransaction)
 } catch (e) {
-  console.log('Create Transaction Failed: %s', e.toString())
-  assert(false === true)
+    console.log('Create Transaction Failed: %s', e.toString())
+    assert(false === true)
 }
 
 console.log('')

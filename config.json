@@ -2,7 +2,7 @@
   "coinUnitPlaces": 8,
   "coinDisplayUnitPlaces": 2,
   "addressPrefix": 18181,
-  "keccakIterations": 1,
+  "keccakIterations": 100,
   "defaultNetworkFee": 0,
   "mmMiningBlockVersion": 2
 }
