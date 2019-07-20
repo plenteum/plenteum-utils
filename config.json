@@ -3,6 +3,6 @@
   "coinDisplayUnitPlaces": 2,
   "addressPrefix": 18181,
   "keccakIterations": 1,
-  "defaultNetworkFee": 0
+  "defaultNetworkFee": 0,
   "mmMiningBlockVersion": 2
 }
