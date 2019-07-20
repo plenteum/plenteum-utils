@@ -36,6 +36,7 @@
       "lib/mnemonic.js",
       "lib/plenteum-crypto/plenteum-crypto.js",
       "lib/plenteum-crypto/plenteum-crypto-wasm.js",
+      "tests/blockTests.js",
       "dist/*"
     ]
   },
