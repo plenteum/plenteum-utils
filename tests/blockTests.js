@@ -49,16 +49,16 @@ const blocks = [
   { block: '050060cb98d99969d134a55f89c13c36e3c9fe6579db219c22bb49056d98f05eec760b0baaf18fe805a96f08a3ffb8ef0abbb7421725eb5ef6f3064a309cfc3f4890f038aaccdad90544550028028f052a13d7c08069fc3175cfc6e9e04863127b22276a9291d49a5ba921e2085b02baf21101ff9cf21102fdcba39d3602e2d6771991fb81f468422f53995318ffd2c6bacf7b5a209df3a26ad030d67841af9f8ba03c02bfd8771443605f90d6b31530b7d08cb0023e6f3fd0bab505d4c939b9af8bb614a30101dfade3139169b90d73a3f22ac7b355d42a601bbaacc1450b41400be83b94bde5032100e52e1508b1a8c8baeab469bd392ced9b1d79ca7df66225ce05c6710d8ee22c41021b0000000000000000000000000abc51ca4a2e000000000000000000010de22ecadf5df4ed10e0bb4f319631d3c2240ca9f85d20ecdbb5dee1015b7aaf72f52f5102b31c1023d5519d777891ac68abc6dade0706ec24c52f7cdbf3cc51bb0001e7c56001ffbfc560070902cfa4dfe1870ab82478af67c4a9053edab50cb0a90e710dd9c76c653bd9c161130a02164c0e2e8e6cab4fbc51f128f7134d570aa7fc747e44b0532c4a357d9b9afda86402a10df923ea3f41bd9f977671b56e094b49082be2f37eea74aa02526951656f0db8170266286662b13eb95319249c28af61843bd81cd9ecbb804368584a6d5b7ac24967c0b80202d9689343b5923958f8485ad2e2512b973f06c8d3eb7b30fb7c25a03d04f7eefa80ea3002f38374d54bc6a7b737c926b07932c3463c31e90d40db2145509cc55f8ce8ad0380897a02785e176f3e718af0d19b7fc9648ce388c959814fd53dbf7dae0356f1e4d169416101da51e8e299dc61b694d42b4eb7c23ee03fffc9123d1d679735bfb031692d4cd4023e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000051ca4a2e0000000000000000010e7e1c479cb227e0986df0e5b58aa55b6b98396a54f11b97f8a3df7bc86f26f3', hash: '37f42da37103a7664b02ddeba85aff087ae0bf2025aa1d620b5fde7ff1dd89ae', pow: 'f0456d35f84f5860aa93e888c222b2b4b9b933b133b81e201783e5f18bb2c377' }
 ]
 
-console.log('')
-console.log('')
-console.log('Performing additional Block serialization and hashing tests...')
-console.log('')
+//console.log('')
+//console.log('')
+//console.log('Performing additional Block serialization and hashing tests...')
+//console.log('')
 
-blocks.forEach((block) => {
-  const test = new Block()
-  test.blob = block.block
-  assert(test.blob === block.block)
-  assert(test.hash === block.hash)
-  assert(test.longHash === block.pow)
-  console.log('Verified serialization and hashing for block at height %s [HASH:%s] [POW:%s]', test.height, test.hash, test.longHash)
-})
+//blocks.forEach((block) => {
+//  const test = new Block()
+//  test.blob = block.block
+//  assert(test.blob === block.block)
+//  assert(test.hash === block.hash)
+//  assert(test.longHash === block.pow)
+//  console.log('Verified serialization and hashing for block at height %s [HASH:%s] [POW:%s]', test.height, test.hash, test.longHash)
+//})
