@@ -179,7 +179,7 @@ class CryptoNote {
   createAddressFromKeys (privateSpendKey, privateViewKey, addressPrefix) {
     addressPrefix = addressPrefix || this.config.addressPrefix
 
-    let derivedViewKey = scReduce32(cnFastHash(privateSpendKey))
+    const derivedViewKey = scReduce32(cnFastHash(privateSpendKey))
 
     /* We have our private keys so we can generate everything for use
        later except the mnemonic as we don't have the seed */
@@ -504,7 +504,7 @@ class CryptoNote {
       throw new Error('Invalid private view key format')
     }
     /* Generate the key deriviation from the random transaction public key and our private view key */
-    let derivation = this.generateKeyDerivation(transactionPublicKey, privateViewKey)
+    const derivation = this.generateKeyDerivation(transactionPublicKey, privateViewKey)
 
     return this.generateKeyImagePrimitive(publicSpendKey, privateSpendKey, outputIndex, derivation)
   }
