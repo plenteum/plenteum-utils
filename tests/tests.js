@@ -6,8 +6,6 @@
 'use strict'
 
 const assert = require('assert')
-const BlockTemplateSample = require('./blocktemplate.json')
-
 const PlenteumUtils = require('../').CryptoNote
 const config = require('../config.json')
 const cnUtil = new PlenteumUtils(config)
@@ -168,6 +166,46 @@ const inputData = '0100fb8e8ac805899323371bb790db19218afd8db8e3755d8b90f39b3d550
 const expectedHash = 'b542df5b6e7f5f05275c98e7345884e2ac726aeeb07e03e44e0389eb86cd05f0'
 const calculatedHash = cnUtil.cnFastHash(inputData)
 
+/* Test Create Transaction */
+
+const madeOutputs = cnUtil.createTransactionOutputs(newAddress.address, 90)
+
+const fakeInput = {
+  index: 2,
+  key: 'bb55bef919d1c9f74b5b52a8a6995a1dc4af4c0bb8824f5dc889012bc748173d',
+  amount: 100,
+  globalIndex: 1595598
+}
+
+const madeInput = cnUtil.isOurTransactionOutput(txPublicKey, fakeInput, walletPrivateViewKey, walletPublicSpendKey, walletPrivateSpendKey)
+
+const randomOutputs = [[
+  {
+    'globalIndex': 53984,
+    'key': 'a5add8e36ca2473734fc7019730593888ae8c320753215976aac105816ba4848'
+  },
+  {
+    'globalIndex': 403047,
+    'key': '273dd5b63e84e6d7f12cf05eab092a7556708d8aac836c8748c1f0df3f0ff7fa'
+  },
+  {
+    'globalIndex': 1533859,
+    'key': '147121ea91715ee21af16513bc058d4ac445accfbe5cedc377c897fb04f4fecc'
+  }
+]]
+
+console.log('')
+console.log('Transaction Creation Tests...')
+console.log('')
+try {
+  const tx = cnUtil.createTransaction(madeOutputs, [madeInput], randomOutputs, 3, 10, '')
+  console.log('Transaction Hash: %s', tx.hash)
+  console.log('Raw Transaction: %s', tx.rawTransaction)
+} catch (e) {
+  console.log('Create Transaction Failed: %s', e.toString())
+  assert(false === true)
+}
+
 console.log('')
 console.log('Hashing Tests...')
 console.log('')
@@ -176,15 +214,3 @@ console.log('Expected Hash: %s', expectedHash)
 console.log('Calculated Hash: %s', calculatedHash)
 
 assert(expectedHash === calculatedHash)
-
-const BlockTemplate = cnUtil.blockTemplate(BlockTemplateSample)
-
-console.log('')
-console.log('Block Template: %s', BlockTemplate.blockTemplate)
-console.log('')
-console.log('Block Version: %s.%s', BlockTemplate.block.majorVersion, BlockTemplate.block.minorVersion)
-console.log('Transaction Count: %s', BlockTemplate.block.transactions.length)
-console.log('')
-console.log('Re-serialized Block Template: %s', BlockTemplate.blob)
-
-assert(BlockTemplate.blockTemplate === BlockTemplate.blob)

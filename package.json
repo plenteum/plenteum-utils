@@ -1,11 +1,11 @@
 {
   "name": "plenteum-utils",
-  "version": "0.4.6",
+  "version": "1.0.2",
   "description": "A Node.js collection of utilities useful for Plenteum developers",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "test": "npm install && standard"
+    "test": "npm install && standard && node tests/tests.js && node tests/blockTests.js"
   },
   "keywords": [
     "Plenteum",
@@ -22,7 +22,7 @@
   ],
   "license": "GPL-3.0",
   "optionalDependencies": {
-    "plenteum-crypto": "0.0.1"
+    "plenteum-crypto": "^3.0.4"
   },
   "dependencies": {
     "crc": "^3.8.0",
@@ -33,12 +33,15 @@
   },
   "standard": {
     "ignore": [
-      "lib/crypto.js",
-      "lib/nacl-fast-cn.js",
-      "lib/ringsigs.js"
+      "lib/mnemonic.js",
+      "lib/plenteum-crypto/plenteum-crypto.js",
+      "lib/plenteum-crypto/plenteum-crypto-wasm.js",
+      "dist/*"
     ]
   },
   "devDependencies": {
-    "standard": "^12.0.1"
+    "copy-webpack-plugin": "^5.0.3",
+    "standard": "^12.0.1",
+    "webpack": "^4.35.3"
   }
 }

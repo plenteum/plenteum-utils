@@ -117,10 +117,10 @@ export class CryptoNote {
      */
     public scanTransactionOutputs(
         transactionPublicKey: string,
-        outputs: Output[],
+        outputs: OutputToScan[],
         privateViewKey: string,
         publicSpendKey: string,
-        privateSpendKey?: string): Output[];
+        privateSpendKey?: string): OurOutput[];
 
     /**
      * Scans a single transaction output to determine if it belongs to us.
@@ -132,15 +132,16 @@ export class CryptoNote {
      *                              Optional. Required to aquire the neccessary information for
      *                              spending transactions.
      *
-     * @returns Returns true if the output is ours, and no private spend key is given.
-     *          Returns false if the output is not ours.
-     *          Returns the output if the output is ours, and a private spend key is given.
+     * @returns Returns false if the output is not ours.
+     *          Returns the output with the input filled in, if the output is ours.
+     *          If a private spend key is given, the `input.privateEphemeral` and `keyImage` properties
+     *          will be filled in.
      */
     public isOurTransactionOutput(
         transactionPublicKey: string,
-        output: Output,
+        output: OutputToScan,
         privateViewKey: string,
-        privateSpendKey?: string): Output | boolean;
+        privateSpendKey?: string): OurOutput | boolean;
 
     /**
      * Generates a key image for the given transaction data.
@@ -182,7 +183,7 @@ export class CryptoNote {
      * Creates a valid transaction to be submitted to the network for sending.
      */
     public createTransaction(
-        transfers: TxDestination[],
+        newOutputs: TxDestination[],
         ourOutputs: Output[],
         randomOuts: RandomOutput[][],
         mixin: number,
@@ -195,7 +196,7 @@ export class CryptoNote {
      * Supports passed in user functions that are asynchronous.
      */
     public createTransactionAsync(
-        transfers: TxDestination[],
+        newOutputs: TxDestination[],
         ourOutputs: Output[],
         randomOuts: RandomOutput[][],
         mixin: number,
@@ -325,6 +326,22 @@ export interface CryptoNoteOptions {
                              privateViewKey: string) => string;
 }
 
+export interface OutputToScan {
+    key: string;
+    index: number;
+}
+
+export interface CreatedInput {
+    transactionKey: Keys;
+    publicEphemeral: string;
+    privateEphemeral?: string;
+}
+
+export interface OurOutput extends OutputToScan {
+    input: CreatedInput;
+    keyImage?: string;
+}
+
 export interface Output {
     key: string;
     input: Input;
@@ -389,13 +406,37 @@ export interface CreatedTransaction {
 }
 
 export interface Transaction {
-    unlockTime: number;
     version: number;
-    extra: string;
-    transactionKeys: Keys;
-    vin: Vin[];
-    vout: Vout[];
+    unlockTime: number;
+    inputs: Vin[];
+    outputs: Vout[];
+    extra: Extra;
     signatures: string[][];
+    ignoredField: boolean;
+    transactionKeys: Keys;
+}
+
+type Extra = Array<PublicKeyTag | NonceTag | MergeMiningTag>;
+
+export interface PublicKeyTag {
+    tag: 1;
+    publicKey: string;
+}
+
+export interface NonceTag {
+    tag: 2;
+    nonces: Nonce[];
+}
+
+export interface MergeMiningTag {
+    tag: 3;
+    depth: number;
+    merkleRoot: string;
+}
+
+export interface Nonce {
+    tag: 0;
+    paymentId: string;
 }
 
 export interface Vin {
@@ -407,12 +448,8 @@ export interface Vin {
 
 export interface Vout {
     amount: number;
-    target: Target;
     type: string;
-}
-
-export interface Target {
-    data: string;
+    key: string;
 }
 
 export interface BlockTemplate {

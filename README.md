@@ -1,24 +1,20 @@
 ![image](https://user-images.githubusercontent.com/38456463/43392866-43c69cf4-93f5-11e8-81e2-3e3f81b6ca1d.png)
 
-[![NPM](https://nodei.co/npm/plenteum-utils.png?downloads=true&stars=true)](https://nodei.co/npm/plenteum-utils/)
+[![NPM](https://nodei.co/npm/plenteum-utils.png?downloads=true&stars=true)](https://www.npmjs.com/package/plenteum-utils)
 
 #### Master Build Status
 [![Build Status](https://travis-ci.com/plenteum/plenteum-utils.svg?branch=master)](https://travis-ci.com/plenteum/plenteum-utils)
 
 # Plenteum Javascript Utilities
 
-## Disclaimer
+This package contains code that wraps [plenteum-crypto](https://github.com/plenteum/plenteum-crypto) primitives into an easier to use interface. This includes the ability to easily discover funds for a wallet, create transactions, sign transactions (ring signatures), create new wallets, verify addresses, and handful of other useful methods. These methods can then be wrapped into a Javascript-based wallet such as [plenteum-wallet-backend-js](https://github.com/plenteum/plenteum-wallet-backend-js).
 
-***Use of this code in its current state may lead to unexpected results***
-
-This repository contains highly experimental code  with the goal of making it possible to interact with a daemon including wallet functionaity (sending/receiving transactions) without the need for `wallet-service` or `wallet-api` using Node.js. By using the code in this repo, you understand that some functions may not work, others may work but be untested, while others may upset you.
-
-The best way to address such situations is to submit a Pull Request to resolve the issue you're running into.
+If you experience any issues with this library, the best way to address such situations is to submit a Pull Request to resolve the issue you are running into.
 
 ## Installation
 
 ```bash
-npm i git+https://github.com/plenteum/plenteum-utils
+npm install plenteum-utils
 ```
 
 ## Initialization
@@ -203,4 +199,5 @@ Special thanks goes out to:
 * Luigi111
 * [The MyMonero Project](https://github.com/mymonero/mymonero-app-js)
 * The Masari Project: [gnock](https://github.com/gnock)
-* The Plentum Project: [DaveLong](https://github.com/DavehLong)
+* The TurtleCoin Project: [TurtleCoin](https://github.com/turtlecoin)
+* The Plentum Project: [DaveLong](https://github.com/plenteum)

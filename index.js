@@ -9,41 +9,15 @@
 
 'use strict'
 
-const BigInteger = require('./lib/biginteger.js')
 const Base58 = require('./lib/base58.js')
-const BlockTemplate = require('./lib/blocktemplate.js')
+const BigInteger = require('./lib/biginteger.js')
+const Block = require('./lib/block.js')
 const Mnemonic = require('./lib/mnemonic.js')
-const Varint = require('varint')
-const SecureRandomString = require('secure-random-string')
 const Numeral = require('numeral')
-
-/* Try to load the Node C++ Addon module
-   so that we can use that as it's a magnitudes
-   faster, if not, we'll fall back to the
-   JS implementations of the crypto functions */
-var PlenteumCrypto
-
-var NACL
-var CNCrypto
-var SHA3
-
-try {
-  PlenteumCrypto = require('plenteum-crypto')
-} catch (e) {
-  /* Silence standardjs check */
-  PlenteumCrypto = e
-  PlenteumCrypto = false
-
-  /* These are the JS implementations of the
-   crypto functions that we need to do what
-   we are trying to do. They are slow and for whatever reason
-   attempt if we can't use the native module
-   painful and only used as a last ditch */
-
-  NACL = require('./lib/nacl-fast-cn.js')
-  CNCrypto = require('./lib/crypto.js')
-  SHA3 = require('./lib/sha3.js')
-}
+const SecureRandomString = require('secure-random-string')
+const Transaction = require('./lib/transaction.js')
+const PlenteumCrypto = require('./lib/plenteum-crypto')()
+const Varint = require('varint')
 
 /* This sets up the ability for the caller to specify
    their own cryptographic functions to use for parts
@@ -54,31 +28,10 @@ try {
 const userCryptoFunctions = {}
 
 const SIZES = {
-  HASH: 64,
   KEY: 64,
-  PAYMENTID_HEX: 64,
-  CHECKSUM: 8,
-  ECPOINT: 32,
-  GEP3: 160,
-  GEP2: 120,
-  GEP1P1: 160,
-  GECACHED: 160,
-  ECSCALAR: 32,
-  KEYIMAGE: 32,
-  GEDSMP: 160 * 8,
-  SIGNATURE: 64
+  CHECKSUM: 8
 }
-const TX_EXTRA_NONCE_MAX_COUNT = 255
-const TX_EXTRA_TAGS = {
-  PADDING: '00',
-  PUBKEY: '01',
-  NONCE: '02',
-  MERGE_MINING: '03'
-}
-const TX_EXTRA_NONCE_TAGS = {
-  PAYMENT_ID: '00',
-  ENCRYPTED_PAYMENT_ID: '01'
-}
+
 const UINT64_MAX = BigInteger(2).pow(64)
 const CURRENT_TX_VERSION = 1
 
@@ -107,11 +60,7 @@ class CryptoNote {
         this.config.defaultNetworkFee = config.defaultNetworkFee
       }
 
-      if (config.mmMiningBlockVersion) {
-        this.config.mmMiningBlockVersion = config.mmMiningBlockVersion
-      }
-
-      /* The checks below are for detecting customer caller
+      /* The checks below are for detecting custom caller
          cryptographic functions and loading them into the
          stack so that they can be used later throughout the
          module and it's underlying functions */
@@ -177,7 +126,7 @@ class CryptoNote {
     /* When we have a seed, then we can create a new key
        pair based on that seed */
     lang = lang || 'english'
-    var keys = {}
+    const keys = {}
 
     /* First we create the spend key pair; however,
        if the seed we were supplied isn't 64 characters
@@ -258,7 +207,12 @@ class CryptoNote {
 
   decodeAddressPrefix (address) {
     /* First we decode the address from Base58 into the raw address */
-    var decodedAddress = Base58.decode(address)
+    var decodedAddress
+    try {
+      decodedAddress = Base58.decode(address)
+    } catch (err) {
+      throw new Error('Could not Base58 decode supplied address. Please check the length and try again.: ' + err.toString())
+    }
 
     /* Now we need to work in reverse, starting with chopping off
        the checksum which is always the same */
@@ -267,14 +221,14 @@ class CryptoNote {
     /* Now we find out how many extra characters there are
        in what's left after we find all of the keys in the address.
        Remember, this works because payment IDs are the same size as keys */
-    var prefixLength = decodedAddress.length % SIZES.KEY
+    const prefixLength = decodedAddress.length % SIZES.KEY
 
     /* Great, now we that we know how long the prefix length is, we
        can grab just that from the front of the address information */
-    var prefixDecoded = decodedAddress.slice(0, prefixLength)
+    const prefixDecoded = decodedAddress.slice(0, prefixLength)
 
     /* Then we can decode it into the integer that it represents */
-    var prefixVarint = decodeVarint(prefixDecoded)
+    const prefixVarint = decodeVarint(prefixDecoded)
 
     /* This block of code is a hack to figure out what the human readable
        address prefix is. While it has been tested with a few different
@@ -287,7 +241,7 @@ class CryptoNote {
 
     /* First we need the need to know how long the varint representation
        of the prefix is, we're going to need it later */
-    var prefixVarintLength = prefixVarint.toString().length
+    const prefixVarintLength = prefixVarint.toString().length
 
     /* This is where it starts to get funny. If the length is an even
        number of characters, we'll need to grab the one extra character
@@ -306,7 +260,7 @@ class CryptoNote {
     /* Using all of that above, we can chop off the first couple of
        characters from the supplied address and get something that looks
        like the Base58 prefix we expected. */
-    var prefixEncoded = address.slice(0, Math.ceil(prefixVarintLength / 2) + offset)
+    const prefixEncoded = address.slice(0, Math.ceil(prefixVarintLength / 2) + offset)
 
     return {
       prefix: prefixDecoded,
@@ -320,14 +274,19 @@ class CryptoNote {
     addressPrefix = addressPrefix || this.config.addressPrefix
 
     /* First, we decode the base58 string to hex */
-    var decodedAddress = Base58.decode(address)
+    var decodedAddress
+    try {
+      decodedAddress = Base58.decode(address)
+    } catch (err) {
+      throw new Error('Could not Base58 decode supplied address. Please check the length and try again.: ' + err.toString())
+    }
 
     /* We need to encode the address prefix from our config
        so that we can compare it later */
     const encodedPrefix = encodeVarint(addressPrefix)
 
     /* Let's chop off the prefix from the address we decoded */
-    var prefix = decodedAddress.slice(0, encodedPrefix.length)
+    const prefix = decodedAddress.slice(0, encodedPrefix.length)
 
     /* Do they match? They better... */
     if (prefix !== encodedPrefix) {
@@ -387,7 +346,19 @@ class CryptoNote {
   }
 
   encodeRawAddress (rawAddress) {
-    return Base58.encode(rawAddress)
+    if (!isHex(rawAddress)) {
+      throw new Error('Supplied Raw address must be hexadecimal characters')
+    }
+
+    if (rawAddress.length % 2 !== 0) {
+      throw new Error('Supplied Raw address must be an even number of characters')
+    }
+
+    try {
+      return Base58.encode(rawAddress)
+    } catch (err) {
+      throw new Error('Could not encode supplied Raw Address to Base58.: ' + err.toString())
+    }
   }
 
   encodeAddress (publicViewKey, publicSpendKey, paymentId, addressPrefix) {
@@ -439,7 +410,8 @@ class CryptoNote {
     addressPrefix = addressPrefix || this.config.addressPrefix
 
     /* Decode our address */
-    var addr = this.decodeAddress(address)
+    const addr = this.decodeAddress(address)
+
     /* Encode the address but this time include the payment ID */
     return this.encodeAddress(addr.publicViewKey, addr.publicSpendKey, paymentId, addressPrefix)
   }
@@ -452,13 +424,13 @@ class CryptoNote {
     /* Given the transaction public key and the array of outputs, let's see if
        any of the outputs belong to us */
 
-    var ourOutputs = []
+    const ourOutputs = []
 
     for (var i = 0; i < outputs.length; i++) {
-      var output = outputs[i]
+      const output = outputs[i]
 
       /* Check to see if this output belongs to us */
-      var ourOutput = this.isOurTransactionOutput(transactionPublicKey, output, privateViewKey, publicSpendKey, privateSpendKey)
+      const ourOutput = this.isOurTransactionOutput(transactionPublicKey, output, privateViewKey, publicSpendKey, privateSpendKey)
       if (ourOutput) {
         ourOutputs.push(ourOutput)
       }
@@ -573,18 +545,18 @@ class CryptoNote {
     const result = []
 
     /* Decode the address into it's important bits */
-    var addressDecoded = this.decodeAddress(address)
+    const addressDecoded = this.decodeAddress(address)
 
     /* Now we need to decompose the amount into "pretty" amounts
        that we can actually mix later. We're doing this by
        converting the amount to a character array and reversing
        it so that we have the digits in each place */
-    var amountChars = amount.toString().split('').reverse()
+    const amountChars = amount.toString().split('').reverse()
 
     /* Loop through the amount characters */
     for (var i = 0; i < amountChars.length; i++) {
       /* Create pretty amounts */
-      var amt = parseInt(amountChars[i]) * Math.pow(10, i)
+      const amt = parseInt(amountChars[i]) * Math.pow(10, i)
 
       if (amt !== 0) {
         result.push({
@@ -602,14 +574,12 @@ class CryptoNote {
   }
 
   createTransaction (newOutputs, ourOutputs, randomOuts, mixin, feeAmount, paymentId, unlockTime) {
-    var tx = this.createTransactionStructure(newOutputs, ourOutputs, randomOuts, mixin, feeAmount, paymentId, unlockTime, false)
-    var serializedTransaction = serializeTransaction(tx)
-    var txnHash = cnFastHash(serializedTransaction)
+    const tx = this.createTransactionStructure(newOutputs, ourOutputs, randomOuts, mixin, feeAmount, paymentId, unlockTime, false)
 
     return {
       transaction: tx,
-      rawTransaction: serializedTransaction,
-      hash: txnHash
+      rawTransaction: tx.blob,
+      hash: tx.hash
     }
   }
 
@@ -617,19 +587,12 @@ class CryptoNote {
     return this.createTransactionStructure(
       newOutputs, ourOutputs, randomOuts, mixin, feeAmount, paymentId, unlockTime, true
     ).then((tx) => {
-      var serializedTransaction = serializeTransaction(tx)
-      var txnHash = cnFastHash(serializedTransaction)
-
       return {
         transaction: tx,
-        rawTransaction: serializedTransaction,
-        hash: txnHash
+        rawTransaction: tx.blob,
+        hash: tx.hash
       }
     })
-  }
-
-  serializeTransaction (transaction) {
-    return serializeTransaction(transaction, false)
   }
 
   formatMoney (amount) {
@@ -651,24 +614,17 @@ class CryptoNote {
 
     if (userCryptoFunctions.underivePublicKey) {
       userCryptoFunctions.underivePublicKey(derivation, outputIndex, outputKey)
-    } else if (PlenteumCrypto) {
-      const [err, key] = PlenteumCrypto.underivePublicKey(derivation, outputIndex, outputKey)
-      if (err) throw new Error('Could not underive public key')
-
-      return key
-    } else {
-      const RingSigs = require('./lib/ringsigs.js')
-
-      return RingSigs.underivePublicKey(derivation, outputIndex, outputKey)
     }
+
+    const [err, key] = PlenteumCrypto.underivePublicKey(derivation, outputIndex, outputKey)
+
+    if (err) throw new Error('Could not underive public key')
+
+    return key
   }
 
   cnFastHash (data) {
     return cnFastHash(data)
-  }
-
-  blockTemplate (payload) {
-    return new BlockTemplate(payload, this.mmMiningBlockVersion)
   }
 }
 
@@ -683,54 +639,8 @@ function isHex64 (str) {
   return regex.test(str)
 }
 
-function swapEndian (hex) {
-  if (hex.length % 2 !== 0) {
-    throw new Error('Hex string length must be a multiple of 2!')
-  }
-  var result = ''
-
-  var loopCount = hex.length / 2
-  for (var i = 1; i <= loopCount; i++) {
-    result += hex.substr(0 - 2 * i, 2)
-  }
-
-  return result
-}
-
-function d2h (integer) {
-  if (typeof integer !== 'string' && integer.toString().length > 15) {
-    throw new Error('Integer should be entered as a string for precision')
-  }
-
-  var padding = ''
-  for (var i = 0; i < 64; i++) {
-    padding += '0'
-  }
-
-  const result = (padding + BigInteger(integer).toString(16).toLowerCase()).slice(-(SIZES.KEY))
-  return result
-}
-
-function d2s (integer) {
-  return swapEndian(d2h(integer))
-}
-
-function hex2bin (hex) {
-  if (hex.length % 2 !== 0) {
-    throw new Error('Hex string has invalid length')
-  }
-
-  var result = new Uint8Array(hex.length / 2)
-  var hexLength = hex.length / 2
-  for (var i = 0; i < hexLength; i++) {
-    result[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
-  }
-
-  return result
-}
-
 function bin2hex (bin) {
-  var result = []
+  const result = []
   for (var i = 0; i < bin.length; ++i) {
     result.push(('0' + bin[i].toString(16)).slice(-2))
   }
@@ -739,7 +649,7 @@ function bin2hex (bin) {
 }
 
 function str2bin (str) {
-  var result = new Uint8Array(str.length)
+  const result = new Uint8Array(str.length)
   for (var i = 0; i < str.length; i++) {
     result[i] = str.charCodeAt(i)
   }
@@ -749,20 +659,16 @@ function str2bin (str) {
 
 function rand32 () {
   /* Go get 256-bits (32 bytes) of random data */
-  return Mnemonic.random(256)
+  try {
+    return Mnemonic.random(256)
+  } catch (err) {
+    throw new Error('Could not retrieve 32-bytes of random data: ' + err.toString())
+  }
 }
 
-function encodeVarint (i) {
-  i = BigInteger(i)
-
-  var result = ''
-  while (i.compare(0x80) >= 0) {
-    result += ('0' + ((i.lowVal() & 0x7f) | 0x80).toString(16)).slice(-2)
-    i = i.divide(BigInteger(2).pow(7))
-  }
-  result += ('0' + i.toJSValue().toString(16)).slice(-2)
-
-  return result
+function encodeVarint (val) {
+  const buf = Buffer.from(Varint.encode(val))
+  return buf.toString('hex')
 }
 
 function decodeVarint (hex) {
@@ -770,52 +676,16 @@ function decodeVarint (hex) {
   return parseInt(Varint.decode(buffer))
 }
 
-function scReduce (hex, size) {
-  size = size || 64
-  var input = hex2bin(hex)
-  if (input.length !== size) {
-    throw new Error('Invalid input length')
-  }
-
-  var memory = CNCrypto._malloc(size)
-  CNCrypto.HEAPU8.set(input, memory)
-  CNCrypto.ccall('sc_reduce32', 'void', ['number'], [memory])
-
-  var result = CNCrypto.HEAPU8.subarray(memory, memory + size)
-  CNCrypto._free(memory)
-
-  return bin2hex(result)
-}
-
 function scReduce32 (hex) {
-  if (PlenteumCrypto) {
-    const [err, result] = PlenteumCrypto.scReduce32(hex)
-    if (err) throw new Error('Could not scReduce32')
+  const [err, result] = PlenteumCrypto.scReduce32(hex)
 
-    return result
-  } else {
-    return scReduce(hex, 32)
-  }
-}
+  if (err) throw new Error('Could not scReduce32')
 
-function geScalarMult (publicKey, privateKey) {
-  if (!isHex64(publicKey)) {
-    throw new Error('Invalid public key format')
-  }
-
-  if (!isHex64(privateKey)) {
-    throw new Error('Invalid secret key format')
-  }
-
-  return bin2hex(NACL.ll.geScalarmult(hex2bin(publicKey), hex2bin(privateKey)))
-}
-
-function getScalarMultBase (privateKey) {
-  return privateKeyToPublicKey(privateKey)
+  return result
 }
 
 function derivePublicKey (derivation, outputIndex, publicKey) {
-  if (derivation.length !== (SIZES.ECPOINT * 2)) {
+  if (derivation.length !== SIZES.KEY) {
     throw new Error('Invalid derivation length')
   }
 
@@ -825,19 +695,17 @@ function derivePublicKey (derivation, outputIndex, publicKey) {
 
   if (userCryptoFunctions.derivePublicKey) {
     return userCryptoFunctions.derivePublicKey(derivation, outputIndex, publicKey)
-  } else if (PlenteumCrypto) {
-    const [err, key] = PlenteumCrypto.derivePublicKey(derivation, outputIndex, publicKey)
-    if (err) throw new Error('Could not derive public key')
-
-    return key
-  } else {
-    var s = derivationToScalar(derivation, outputIndex)
-    return bin2hex(NACL.ll.geAdd(hex2bin(publicKey), hex2bin(getScalarMultBase(s))))
   }
+
+  const [err, key] = PlenteumCrypto.derivePublicKey(derivation, outputIndex, publicKey)
+
+  if (err) throw new Error('Could not derive public key')
+
+  return key
 }
 
 function deriveSecretKey (derivation, outputIndex, privateKey) {
-  if (derivation.length !== (SIZES.ECPOINT * 2)) {
+  if (derivation.length !== SIZES.KEY) {
     throw new Error('Invalid derivation length')
   }
 
@@ -847,29 +715,13 @@ function deriveSecretKey (derivation, outputIndex, privateKey) {
 
   if (userCryptoFunctions.deriveSecretKey) {
     return userCryptoFunctions.deriveSecretKey(derivation, outputIndex, privateKey)
-  } else if (PlenteumCrypto) {
-    const [err, key] = PlenteumCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
-    if (err) throw new Error('Could not derive secret key')
-
-    return key
-  } else {
-    var m = CNCrypto._malloc(SIZES.ECSCALAR)
-    var b = hex2bin(derivationToScalar(derivation, outputIndex))
-    CNCrypto.HEAPU8.set(b, m)
-
-    var baseM = CNCrypto._malloc(SIZES.ECSCALAR)
-    CNCrypto.HEAPU8.set(hex2bin(privateKey), baseM)
-
-    var derivedM = CNCrypto._malloc(SIZES.ECSCALAR)
-    CNCrypto.ccall('sc_add', 'void', ['number', 'number', 'number'], [derivedM, baseM, m])
-
-    var result = CNCrypto.HEAPU8.subarray(derivedM, derivedM + SIZES.ECSCALAR)
-    CNCrypto._free(m)
-    CNCrypto._free(baseM)
-    CNCrypto._free(derivedM)
-
-    return bin2hex(result)
   }
+
+  const [err, key] = PlenteumCrypto.deriveSecretKey(derivation, outputIndex, privateKey)
+
+  if (err) throw new Error('Could not derive secret key')
+
+  return key
 }
 
 function generateKeyImage (publicKey, privateKey) {
@@ -883,39 +735,13 @@ function generateKeyImage (publicKey, privateKey) {
 
   if (userCryptoFunctions.generateKeyImage) {
     return userCryptoFunctions.generateKeyImage(publicKey, privateKey)
-  } else if (PlenteumCrypto) {
-    const [err, keyImage] = PlenteumCrypto.generateKeyImage(publicKey, privateKey)
-    if (err) throw new Error('Could not generate key image')
-
-    return keyImage
-  } else {
-    const RingSigs = require('./lib/ringsigs.js')
-
-    return RingSigs.generate_key_image(publicKey, privateKey)
-  }
-}
-
-function hashToScalar (buf) {
-  const hash = cnFastHash(buf)
-  return scReduce32(hash)
-}
-
-function derivationToScalar (derivation, outputIndex) {
-  var buf = ''
-
-  if (derivation.length !== (SIZES.ECPOINT * 2)) {
-    throw new Error('Invalid derivation length')
   }
 
-  buf += derivation
+  const [err, keyImage] = PlenteumCrypto.generateKeyImage(publicKey, privateKey)
 
-  var enc = encodeVarint(outputIndex)
-  if (enc.length > (10 * 2)) {
-    throw new Error('outputIndex does not fit in 64-bit varint')
-  }
+  if (err) throw new Error('Could not generate key image')
 
-  buf += enc
-  return hashToScalar(buf)
+  return keyImage
 }
 
 function privateKeyToPublicKey (privateKey) {
@@ -925,14 +751,13 @@ function privateKeyToPublicKey (privateKey) {
 
   if (userCryptoFunctions.secretKeyToPublicKey) {
     return userCryptoFunctions.secretKeyToPublicKey(privateKey)
-  } else if (PlenteumCrypto) {
-    const [err, key] = PlenteumCrypto.secretKeyToPublicKey(privateKey)
-    if (err) throw new Error('Could not derive public key from secret key')
-
-    return key
-  } else {
-    return bin2hex(NACL.ll.geScalarmultBase(hex2bin(privateKey)))
   }
+
+  const [err, key] = PlenteumCrypto.secretKeyToPublicKey(privateKey)
+
+  if (err) throw new Error('Could not derive public key from secret key')
+
+  return key
 }
 
 function cnFastHash (input) {
@@ -942,14 +767,13 @@ function cnFastHash (input) {
 
   if (userCryptoFunctions.cnFastHash) {
     return userCryptoFunctions.cnFastHash(input)
-  } else if (PlenteumCrypto) {
-    const [err, hash] = PlenteumCrypto.cnFastHash(input)
-    if (err) throw new Error('Could not calculate CN Fast Hash')
-
-    return hash
-  } else {
-    return SHA3.keccak_256(hex2bin(input))
   }
+
+  const [err, hash] = PlenteumCrypto.cn_fast_hash(input)
+
+  if (err) throw new Error('Could not calculate CN Fast Hash')
+
+  return hash
 }
 
 function simpleKdf (str, iterations) {
@@ -967,8 +791,9 @@ function generateKeys (seed) {
     throw new Error('Invalid seed length')
   }
 
-  var privateKey = scReduce32(seed)
-  var publicKey = privateKeyToPublicKey(privateKey)
+  const privateKey = scReduce32(seed)
+
+  const publicKey = privateKeyToPublicKey(privateKey)
 
   return {
     privateKey: privateKey,
@@ -999,49 +824,7 @@ function absoluteToRelativeOffsets (offsets) {
   return offsets
 }
 
-function addTransactionPublicKeyToExtra (extra, transactionPublicKey) {
-  if (!isHex64(transactionPublicKey)) {
-    throw new Error('Invalid Transaction Public Key Format')
-  }
-
-  extra += TX_EXTRA_TAGS.PUBKEY
-  extra += transactionPublicKey
-
-  return extra
-}
-
-function getPaymentIdNonce (paymentId) {
-  if (!isHex64(paymentId)) {
-    throw new Error('Payment ID must be 64 hexadecimal characters')
-  }
-
-  return TX_EXTRA_NONCE_TAGS.PAYMENT_ID + paymentId
-}
-
-function addNonceToExtra (extra, nonce) {
-  if ((nonce.length % 2) !== 0) {
-    throw new Error('Invalid extra nonce')
-  }
-
-  if ((nonce.length / 2) > TX_EXTRA_NONCE_MAX_COUNT) {
-    throw new Error('Extra nonce must be at most ' + TX_EXTRA_NONCE_MAX_COUNT + ' bytes')
-  }
-
-  /* Add the NONCE tag */
-  extra += TX_EXTRA_TAGS.NONCE
-
-  /* Encode the length of the NONCE */
-  extra += ('0' + (nonce.length / 2).toString(16)).slice(-2)
-
-  /* Add the NONCE */
-  extra += nonce
-
-  return extra
-}
-
 function generateRingSignature (transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex) {
-  var sigs = []
-
   if (!isHex64(keyImage)) {
     throw new Error('Invalid Key Image format')
   }
@@ -1060,29 +843,19 @@ function generateRingSignature (transactionPrefixHash, keyImage, inputKeys, priv
 
   if (userCryptoFunctions.generateRingSignatures) {
     return userCryptoFunctions.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
-  } else if (PlenteumCrypto) {
-    const [err, signatures] = PlenteumCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
-    if (err) return new Error('Could not generate ring signatures')
-
-    return signatures
-  } else {
-    const RingSigs = require('./lib/ringsigs.js')
-
-    var cSigs = new RingSigs.VectorString()
-    var cInputKeys = new RingSigs.VectorString()
-
-    inputKeys.forEach((key) => {
-      cInputKeys.push_back(key)
-    })
-
-    cSigs = RingSigs.generateRingSignatures(transactionPrefixHash, keyImage, cInputKeys, privateKey, realIndex)
-
-    for (var i = 0; i < cSigs.size(); i++) {
-      sigs.push(cSigs.get(i))
-    }
-
-    return sigs
   }
+
+  const [err, signatures] = PlenteumCrypto.generateRingSignatures(transactionPrefixHash, keyImage, inputKeys, privateKey, realIndex)
+
+  if (err) return new Error('Could not generate ring signatures')
+
+  if (typeof PlenteumCrypto.checkRingSignatures !== 'undefined') {
+    if (!PlenteumCrypto.checkRingSignatures(transactionPrefixHash, keyImage, inputKeys, signatures)) {
+      return new Error('Could not verify generated ring signatures')
+    }
+  }
+
+  return signatures
 }
 
 function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmount, paymentId, unlockTime, _async) {
@@ -1117,6 +890,7 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
      is actually possible within the confines of a uint64 */
   var neededMoney = BigInteger.ZERO
   for (i = 0; i < newOutputs.length; i++) {
+    if (newOutputs[i].amount <= 0) throw new Error('Cannot create an output with an amount <= 0')
     neededMoney = neededMoney.add(newOutputs[i].amount)
     if (neededMoney.compare(UINT64_MAX) !== -1) {
       throw new Error('Total output amount exceeds UINT64_MAX')
@@ -1127,6 +901,7 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
      is actually possible within the confines of a uint64 */
   var foundMoney = BigInteger.ZERO
   for (i = 0; i < ourOutputs.length; i++) {
+    if (ourOutputs[i].amount <= 0) throw new Error('Cannot spend outputs with an amount <= 0')
     foundMoney = foundMoney.add(ourOutputs[i].amount)
     if (foundMoney.compare(UINT64_MAX) !== -1) {
       throw new Error('Total input amount exceeds UINT64_MAX')
@@ -1138,7 +913,7 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
      relatively early as everything starts to get a little
      more computationally expensive from here on out */
   var change = BigInteger.ZERO
-  var cmp = neededMoney.compare(foundMoney)
+  const cmp = neededMoney.compare(foundMoney)
   if (cmp < 0) {
     change = foundMoney.subtract(neededMoney)
     if (change.compare(feeAmount) !== 0) {
@@ -1149,27 +924,20 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
   }
 
   /* Create our transaction inputs using the helper function */
-  var transactionInputs = createTransactionInputs(ourOutputs, randomOutputs, mixin)
+  const transactionInputs = createTransactionInputs(ourOutputs, randomOutputs, mixin)
 
   /* Prepare our transaction outputs using the helper function */
-  var transactionOutputs = prepareTransactionOutputs(newOutputs, _async)
-
-  var transactionExtra = ''
-  /* If we have a payment ID we need to add it to tx_extra */
-  if (isHex64(paymentId)) {
-    const nonce = getPaymentIdNonce(paymentId)
-    transactionExtra = addNonceToExtra(transactionExtra, nonce)
-  }
+  const transactionOutputs = prepareTransactionOutputs(newOutputs, _async)
 
   /* Start constructing our actual transaction */
-  const tx = {
-    unlockTime: unlockTime,
-    version: CURRENT_TX_VERSION,
-    extra: transactionExtra,
-    transactionKeys: transactionOutputs.transactionKeys,
-    vin: [],
-    vout: [],
-    signatures: []
+  const tx = new Transaction()
+  tx.version = CURRENT_TX_VERSION
+  tx.unlockTime = unlockTime
+  tx.transactionKeys = transactionOutputs.transactionKeys
+
+  /* If there is a payment ID add it to the transaction */
+  if (isHex64(paymentId)) {
+    tx.addPaymentId(paymentId)
   }
 
   transactionInputs.sort(function (a, b) {
@@ -1178,7 +946,7 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
 
   transactionInputs.forEach((input) => {
     const inputToKey = {
-      type: 'input_to_key',
+      type: '02',
       amount: input.amount,
       keyImage: input.keyImage,
       keyOffsets: []
@@ -1190,32 +958,33 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
 
     inputToKey.keyOffsets = absoluteToRelativeOffsets(inputToKey.keyOffsets)
 
-    tx.vin.push(inputToKey)
+    tx.inputs.push(inputToKey)
   })
 
-  tx.extra = addTransactionPublicKeyToExtra(tx.extra, transactionOutputs.transactionKeys.publicKey)
+  /* Add the transaction public key to the transaction */
+  tx.addPublicKey(transactionOutputs.transactionKeys.publicKey)
 
   if (_async) {
     /* Use Promise.resolve so even if the result isn't a promise, it still
        works */
     return Promise.resolve(transactionOutputs.outputs).then((outputs) => {
       outputs.forEach((output) => {
-        tx.vout.push(output)
+        tx.outputs.push(output)
       })
 
-      const txPrefixHash = getTransactionPrefixHash(tx)
+      const txPrefixHash = tx.prefixHash
 
       const sigPromises = []
 
       for (i = 0; i < transactionInputs.length; i++) {
-        var txInput = transactionInputs[i]
+        const txInput = transactionInputs[i]
 
-        var srcKeys = []
+        const srcKeys = []
         txInput.outputs.forEach((out) => {
           srcKeys.push(out.key)
         })
 
-        var sigPromise = Promise.resolve(generateRingSignature(
+        const sigPromise = Promise.resolve(generateRingSignature(
           txPrefixHash, txInput.keyImage, srcKeys, txInput.input.privateEphemeral, txInput.realOutputIndex
         )).then((sigs) => {
           tx.signatures.push(sigs)
@@ -1231,15 +1000,15 @@ function createTransaction (newOutputs, ourOutputs, randomOutputs, mixin, feeAmo
     })
   } else {
     transactionOutputs.outputs.forEach((output) => {
-      tx.vout.push(output)
+      tx.outputs.push(output)
     })
 
-    const txPrefixHash = getTransactionPrefixHash(tx)
+    const txPrefixHash = tx.prefixHash
 
     for (i = 0; i < transactionInputs.length; i++) {
-      var txInput = transactionInputs[i]
+      const txInput = transactionInputs[i]
 
-      var srcKeys = []
+      const srcKeys = []
       txInput.outputs.forEach((out) => {
         srcKeys.push(out.key)
       })
@@ -1269,12 +1038,14 @@ function createTransactionInputs (ourOutputs, randomOutputs, mixin) {
     }
   }
 
-  var mixedInputs = []
+  const mixedInputs = []
 
   /* Loop through our outputs that we're using to send funds */
   for (i = 0; i < ourOutputs.length; i++) {
     const mixedOutputs = []
     const realOutput = ourOutputs[i]
+
+    if (realOutput.amount <= 0) throw new Error('Real Inputs cannot have an amount <= 0')
 
     /* If we're using mixins, then we need to use the random outputs */
     if (mixin !== 0) {
@@ -1372,21 +1143,19 @@ function prepareTransactionOutputs (outputs, _async) {
       }).then((outEphemeralPub) => {
         return ({
           amount: output.amount,
-          target: {
-            data: outEphemeralPub
-          },
-          type: 'txout_to_key'
+          key: outEphemeralPub,
+          type: '02'
         })
       })
     })
   } else {
     for (var i = 0; i < outputs.length; i++) {
-      var output = outputs[i]
+      const output = outputs[i]
       if (output.amount <= 0) {
         throw new Error('Cannot have an amount <= 0')
       }
 
-      var outDerivation = generateKeyDerivation(output.keys.publicViewKey, transactionKeys.privateKey)
+      const outDerivation = generateKeyDerivation(output.keys.publicViewKey, transactionKeys.privateKey)
 
       /* Generate the one time output key */
       const outEphemeralPub = derivePublicKey(outDerivation, i, output.keys.publicSpendKey)
@@ -1394,10 +1163,8 @@ function prepareTransactionOutputs (outputs, _async) {
       /* Push it on to our stack */
       preparedOutputs.push({
         amount: output.amount,
-        target: {
-          data: outEphemeralPub
-        },
-        type: 'txout_to_key'
+        key: outEphemeralPub,
+        type: '02'
       })
     }
   }
@@ -1414,80 +1181,6 @@ function prepareTransactionOutputs (outputs, _async) {
   return { transactionKeys, outputs: preparedOutputs }
 }
 
-function getTransactionPrefixHash (tx) {
-  /* Serialize the transaction as a string (blob) but
-     do not include the signatures */
-  var prefix = serializeTransaction(tx, true)
-
-  /* Hash it */
-  return cnFastHash(prefix)
-}
-
-function serializeTransaction (tx, headerOnly) {
-  headerOnly = headerOnly || false
-
-  var buf = ''
-  buf += encodeVarint(tx.version)
-  buf += encodeVarint(tx.unlockTime)
-
-  /* Loop through the transaction inputs and put them in the buffer */
-  buf += encodeVarint(tx.vin.length)
-  for (var i = 0; i < tx.vin.length; i++) {
-    var vin = tx.vin[i]
-    switch (vin.type.toLowerCase()) {
-      case 'input_to_key':
-        buf += '02'
-        buf += encodeVarint(vin.amount)
-        buf += encodeVarint(vin.keyOffsets.length)
-        for (var j = 0; j < vin.keyOffsets.length; j++) {
-          buf += encodeVarint(vin.keyOffsets[j])
-        }
-        buf += vin.keyImage
-        break
-      default:
-        throw new Error('Unhandled transaction input type: ' + vin.type)
-    }
-  }
-
-  /* Loop through the transaction outputs and put them in the buffer */
-  buf += encodeVarint(tx.vout.length)
-  for (i = 0; i < tx.vout.length; i++) {
-    var vout = tx.vout[i]
-    buf += encodeVarint(vout.amount)
-    switch (vout.type.toLowerCase()) {
-      case 'txout_to_key':
-        buf += '02'
-        buf += vout.target.data
-        break
-      default:
-        throw new Error('Unhandled transacount output type: ' + vout.type)
-    }
-  }
-
-  /* If we supplied extra data, it needs to be hexadecimal */
-  if (!isHex(tx.extra)) {
-    throw new Error('Transaction extra has invalid hexadecimal data')
-  }
-
-  buf += encodeVarint(tx.extra.length / 2)
-  buf += tx.extra
-
-  /* Loop through the transaction signatures if this is a full transaction payload
-     and put them in the buffer */
-  if (!headerOnly) {
-    if (tx.vin.length !== tx.signatures.length) {
-      throw new Error('Number of signatures supplied does not equal the number of inputs used')
-    }
-    for (i = 0; i < tx.vin.length; i++) {
-      for (j = 0; j < tx.signatures[i].length; j++) {
-        buf += tx.signatures[i][j]
-      }
-    }
-  }
-
-  return buf
-}
-
 function generateKeyDerivation (transactionPublicKey, privateViewKey) {
   if (!isHex64(transactionPublicKey)) {
     throw new Error('Invalid public key format')
@@ -1499,17 +1192,18 @@ function generateKeyDerivation (transactionPublicKey, privateViewKey) {
 
   if (userCryptoFunctions.generateKeyDerivation) {
     return userCryptoFunctions.generateKeyDerivation(transactionPublicKey, privateViewKey)
-  } else if (PlenteumCrypto) {
-    const [err, derivation] = PlenteumCrypto.generateKeyDerivation(privateViewKey, transactionPublicKey)
-    if (err) throw new Error('Could not generate key derivation')
-
-    return derivation
-  } else {
-    var p = geScalarMult(transactionPublicKey, privateViewKey)
-    return geScalarMult(p, d2s(8))
   }
+
+  const [err, derivation] = PlenteumCrypto.generateKeyDerivation(transactionPublicKey, privateViewKey)
+
+  if (err) throw new Error('Could not generate key derivation')
+
+  return derivation
 }
 
 module.exports = {
-  CryptoNote
+  CryptoNote,
+  Block,
+  Transaction,
+  Crypto: PlenteumCrypto
 }
