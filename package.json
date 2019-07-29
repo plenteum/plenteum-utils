@@ -1,6 +1,6 @@
 {
   "name": "plenteum-utils",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A Node.js collection of utilities useful for Plenteum developers",
   "main": "index.js",
   "types": "index.d.ts",
@@ -18,11 +18,11 @@
   "author": "Brandon Lehmann <brandonlehmann@gmail.com>",
   "contributors": [
     "zpalmtree <22151537+zpalmtree@users.noreply.github.com>",
-    "davehlong <davidhamiltonlong@gmail.com>"
+    "Dave Long <support@plenteum.com>"
   ],
   "license": "GPL-3.0",
   "optionalDependencies": {
-    "plenteum-crypto": "^3.0.4"
+    "plenteum-crypto": "^3.0.6"
   },
   "dependencies": {
     "crc": "^3.8.0",
