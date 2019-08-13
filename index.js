@@ -12,6 +12,7 @@
 const Base58 = require('./lib/base58.js')
 const BigInteger = require('./lib/biginteger.js')
 const Block = require('./lib/block.js')
+const BlockTemplate = require('./lib/blocktemplate.js')
 const Mnemonic = require('./lib/mnemonic.js')
 const Numeral = require('numeral')
 const SecureRandomString = require('secure-random-string')
@@ -1202,8 +1203,9 @@ function generateKeyDerivation (transactionPublicKey, privateViewKey) {
 }
 
 module.exports = {
-  CryptoNote,
   Block,
-  Transaction,
-  Crypto: PlenteumCrypto
+  BlockTemplate,
+  Crypto: PlenteumCrypto,
+  CryptoNote,
+  Transaction
 }
