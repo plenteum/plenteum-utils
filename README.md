@@ -137,6 +137,10 @@ The regular code only supports synchronous provided funcs, so ensure any async u
 
 *Documentation In Progress*
 
+#### decodeRawTransaction(blob)
+
+*Documentation In Progress*
+
 #### generateKeyDerivation(transactionPublicKey, privateViewKey)
 
 Creates the key 'derivation' given a transaction public key, and the private view key.

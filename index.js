@@ -12,13 +12,13 @@
 const Base58 = require('./lib/base58.js')
 const BigInteger = require('./lib/biginteger.js')
 const Block = require('./lib/block.js')
-const BlockTemplate = require('./lib/blocktemplate.js')
 const Mnemonic = require('./lib/mnemonic.js')
 const Numeral = require('numeral')
 const SecureRandomString = require('secure-random-string')
 const Transaction = require('./lib/transaction.js')
 const PlenteumCrypto = require('./lib/plenteum-crypto')()
 const Varint = require('varint')
+const Reader = require('./lib/reader.js')
 
 /* This sets up the ability for the caller to specify
    their own cryptographic functions to use for parts
@@ -623,6 +623,10 @@ class CryptoNote {
 
     return key
   }
+  
+  decodeRawTransaction (blob) {
+    return decodeRawTransaction(blob);
+  }
 
   cnFastHash (data) {
     return cnFastHash(data)
@@ -1182,6 +1186,144 @@ function prepareTransactionOutputs (outputs, _async) {
   return { transactionKeys, outputs: preparedOutputs }
 }
 
+function decodeRawTransaction(blob) {
+  const reader = new Reader(Buffer.from(blob, 'hex'))
+  let tx = {};
+  tx.inputs = []
+  tx.outputs = []
+  tx.extra = []
+  tx.signatures = []
+
+  tx.version = reader.nextVarint()
+  tx.unlockTime = reader.nextVarint()
+
+  const inputsCount = reader.nextVarint()
+
+  for (var i = 0; i < inputsCount; i++) {
+    const input = {}
+    input.type = reader.nextBytes().toString('hex')
+
+    switch (input.type) {
+      case '02':
+        input.amount = reader.nextVarint()
+        input.keyOffsets = []
+        const offsetsLength = reader.nextVarint()
+        for (var j = 0; j < offsetsLength; j++) {
+          input.keyOffsets.push(reader.nextVarint())
+        }
+        input.keyImage = reader.nextHash()
+        break
+      case 'ff':
+        input.blockIndex = reader.nextVarint()
+        break
+      default:
+        throw new Error('Unhandled transaction input type')
+    }
+    tx.inputs.push(input)
+  }
+
+  const outputsCount = reader.nextVarint()
+
+  for (i = 0; i < outputsCount; i++) {
+    const output = {}
+
+    output.amount = reader.nextVarint()
+    output.type = reader.nextBytes().toString('hex')
+
+    switch (output.type) {
+      case '02':
+        output.key = reader.nextHash()
+        break
+      default:
+        throw new Error('Unhandled transaction output type')
+    }
+    tx.outputs.push(output)
+  }
+
+  /* Handle the tx extra */
+  const extraSize = reader.nextVarint()
+  const extraBlob = reader.nextBytes(extraSize)
+  tx.extra = extraFromBlob(extraBlob)
+
+  /* If there are bytes remaining and they are divisible by 64,
+     then we have signatures remaining at the end */
+  if (reader.unreadBytes > 0 && reader.unreadBytes % 64 === 0) {
+    /* Calculate the number of mixins we expect */
+    const mixins = reader.unreadBytes / 64 / tx.inputs.length
+
+    if (mixins % 1 !== 0) throw new Error('Unstructured data found at the end of transaction blob')
+
+    /* Loop through our inputs */
+    for (i = 0; i < tx.inputs.length; i++) {
+      const signatures = []
+      for (j = 0; j < mixins; j++) {
+        signatures.push(reader.nextBytes(64).toString('hex'))
+      }
+      tx.signatures.push(signatures)
+    }
+  } else if (reader.unreadBytes > 0) {
+    throw new Error('Unstructured data found at the end of transaction blob')
+  }
+
+  return tx;
+}
+
+function extraFromBlob (blob) {
+  /* We were passed a Buffer and we're going to set up
+     a new reader for it to make life easier */
+  const reader = new Reader(blob)
+
+  /* Set up our result for returning what we find */
+  const result = []
+
+  /* We're going to shadow this later */
+  var length
+
+  /* While there's still data to read, we need to loop
+     through it until we're done */
+  while (reader.currentOffset < blob.length) {
+    /* Get the TX extra tag */
+    const tag = { tag: reader.nextVarint() }
+
+    switch (tag.tag) {
+      case 0: // Padding?
+        break
+      case 1: // Transaction Public Key
+        tag.publicKey = reader.nextHash()
+        break
+      case 2: // Extra Nonce
+        length = reader.nextVarint()
+        tag.nonces = []
+        const nonceReader = new Reader(reader.nextBytes(length))
+
+        while (nonceReader.unreadBytes > 0) {
+          const nonceTag = { tag: nonceReader.nextVarint() }
+
+          switch (nonceTag.tag) {
+            case 0:
+              nonceTag.paymentId = nonceReader.nextHash()
+              break
+            default:
+              throw new Error('Unhandled transaction nonce data')
+          }
+
+          tag.nonces.push(nonceTag)
+        }
+        break
+      case 3: // Merged Mining Tag
+        length = reader.nextVarint()
+        tag.depth = reader.nextVarint()
+        tag.merkleRoot = reader.nextHash()
+        break
+    }
+
+    result.push(tag)
+  }
+
+  /* We have what we need so we'll kick it back */
+  return result
+}
+
 function generateKeyDerivation (transactionPublicKey, privateViewKey) {
   if (!isHex64(transactionPublicKey)) {
     throw new Error('Invalid public key format')
@@ -1203,9 +1345,8 @@ function generateKeyDerivation (transactionPublicKey, privateViewKey) {
 }
 
 module.exports = {
-  Block,
-  BlockTemplate,
-  Crypto: PlenteumCrypto,
   CryptoNote,
-  Transaction
+  Block,
+  Transaction,
+  Crypto: PlenteumCrypto
 }
