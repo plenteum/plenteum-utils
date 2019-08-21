@@ -623,9 +623,9 @@ class CryptoNote {
 
     return key
   }
-  
+
   decodeRawTransaction (blob) {
-    return decodeRawTransaction(blob);
+    return decodeRawTransaction(blob)
   }
 
   cnFastHash (data) {
@@ -1186,9 +1186,9 @@ function prepareTransactionOutputs (outputs, _async) {
   return { transactionKeys, outputs: preparedOutputs }
 }
 
-function decodeRawTransaction(blob) {
+function decodeRawTransaction (blob) {
   const reader = new Reader(Buffer.from(blob, 'hex'))
-  let tx = {};
+  const tx = {}
   tx.inputs = []
   tx.outputs = []
   tx.extra = []
@@ -1265,7 +1265,7 @@ function decodeRawTransaction(blob) {
     throw new Error('Unstructured data found at the end of transaction blob')
   }
 
-  return tx;
+  return tx
 }
 
 function extraFromBlob (blob) {
